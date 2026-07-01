@@ -1,0 +1,22 @@
+# Core — required both on the Raspberry Pi and on a dev machine (--simulation)
+PyYAML>=6.0
+numpy>=1.24
+pytest>=7.4
+
+# Vision / camera fallback (heuristic contour detector, dev-machine webcam tests).
+# On the Raspberry Pi, prefer picamera2 installed via apt:
+#   sudo apt install -y python3-picamera2
+# then create the venv with --system-site-packages (see docs/setup.md) so it is
+# importable — it is intentionally NOT pip-installed here.
+opencv-python-headless>=4.8
+
+# AI inference on-device (Raspberry Pi). Falls back gracefully if unavailable.
+tflite-runtime>=2.13; platform_machine == "aarch64" or platform_machine == "armv7l"
+
+# GPIO / sensors (Raspberry Pi). gpiozero works with a mock pin factory off-Pi,
+# so it is safe to install everywhere; RPi.GPIO only builds on the Pi itself.
+gpiozero>=2.0
+RPi.GPIO>=0.7.1; platform_machine == "aarch64" or platform_machine == "armv7l"
+smbus2>=0.4.2
+adafruit-circuitpython-vl53l1x>=3.5.0
+adafruit-blinka>=8.20.0

@@ -1,0 +1,59 @@
+camera:
+  enabled: true
+  width: 320
+  height: 320
+  fps: 10
+  roi_top: 0.15
+  roi_bottom: 0.85
+  roi_left: 0.05
+  roi_right: 0.95
+
+ai:
+  enabled: true
+  model_path: "models/obstacle_detector.tflite"
+  min_confidence: 0.55
+  classes:
+    - galho
+    - placa
+    - poste
+    - lixeira
+    - marquise
+    - mobiliario_urbano
+    - obstaculo_generico
+
+distance_sensor:
+  type: "vl53l1x"
+  enabled: true
+  min_distance_m: 0.2
+  max_distance_m: 3.0
+  moving_average_window: 5
+
+risk:
+  attention_distance_m: 3.0
+  moderate_distance_m: 2.0
+  critical_distance_m: 1.0
+  persistence_frames: 3
+  cooldown_ms: 500
+
+alerts:
+  vibration_enabled: true
+  buzzer_enabled: true
+  silent_mode_default: false
+  left_motor_pin: 17
+  right_motor_pin: 27
+  buzzer_pin: 22
+
+button:
+  enabled: true
+  pin: 5
+  long_press_seconds: 2
+
+logging:
+  enabled: true
+  path: "logs/"
+  format: "csv"
+
+power:
+  low_power_mode: true
+  idle_fps: 3
+  movement_detection_enabled: true

@@ -1,0 +1,12 @@
+[Unit]
+Description=Smart Cane Gralha Azul
+After=network.target
+
+[Service]
+ExecStart=/home/pi/smart-cane/.venv/bin/python /home/pi/smart-cane/src/main.py --config /home/pi/smart-cane/configs/config.yaml
+WorkingDirectory=/home/pi/smart-cane
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
