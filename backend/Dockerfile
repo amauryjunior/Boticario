@@ -7,8 +7,9 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Instala a app + camada agêntica ADK (produção GCP) + driver Postgres
-COPY pyproject.toml ./
+COPY pyproject.toml alembic.ini ./
 COPY app ./app
+COPY migrations ./migrations
 RUN pip install --upgrade pip && pip install ".[adk,postgres]"
 
 # Cloud Run injeta a porta em $PORT

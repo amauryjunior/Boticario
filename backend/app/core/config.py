@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     database_url: str = "sqlite:///./incluabeauty.db"
+    # Executa `alembic upgrade head` no startup (dev/single-instance).
+    # Em produção multi-instância, desligue e rode as migrations como passo de CI/CD.
+    run_migrations_on_start: bool = True
 
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

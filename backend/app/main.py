@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from app.agents import rag
 from app.api.routers import admin, analysis, auth, projects, reports, standards
 from app.core.config import settings
+from app.db.migrate import upgrade_head
 from app.db.seed import seed_demo
 from app.db.session import Base, SessionLocal, engine
 
@@ -17,7 +18,11 @@ logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    if settings.run_migrations_on_start:
+        upgrade_head()
+    else:
+        # Ambiente onde as migrations rodam como passo separado de CI/CD.
+        Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         rag.seed_chunks(db)  # base normativa vetorizada (RAG)
         if settings.seed_demo:

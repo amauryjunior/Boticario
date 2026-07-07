@@ -123,6 +123,22 @@ backend/app/
 Em produção (GCP), o endpoint interno `POST /api/v1/internal/pubsub/analysis`
 recebe o push do Pub/Sub e processa a análise no serviço de agentes.
 
+## Migrations (Alembic)
+
+O schema é versionado com **Alembic** (substitui o `create_all`). No startup, o
+app roda `alembic upgrade head` automaticamente (`RUN_MIGRATIONS_ON_START=true`,
+default). Comandos úteis:
+
+```bash
+alembic upgrade head                          # aplica migrations
+alembic revision --autogenerate -m "mensagem" # gera nova migration após mudar modelos
+alembic downgrade -1                          # reverte a última
+```
+
+Em produção **multi-instância**, desligue o startup automático
+(`RUN_MIGRATIONS_ON_START=false`) e rode `alembic upgrade head` como passo
+dedicado de CI/CD antes do deploy, evitando corrida entre instâncias.
+
 ## Notas de produção
 
 - **Banco**: trocar `DATABASE_URL` para Cloud SQL (PostgreSQL + pgvector).
