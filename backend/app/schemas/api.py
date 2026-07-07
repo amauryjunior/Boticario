@@ -75,6 +75,14 @@ class ComponentOut(ComponentIn):
     id: str
 
 
+class ImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    file_url: str
+    image_type: str | None
+    uploaded_at: datetime
+
+
 class ProductOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
@@ -84,6 +92,7 @@ class ProductOut(BaseModel):
     description: str | None
     cap_type: str | None
     components: list[ComponentOut] = []
+    images: list[ImageOut] = []
 
 
 # ---------- Análise ----------
@@ -117,6 +126,7 @@ class RecommendationOut(BaseModel):
     evidence_level: str | None
     standard_ref: str | None
     standard_status: str | None
+    norm_evidence: str | None = None
 
 
 class ScoreDimension(BaseModel):
@@ -143,6 +153,25 @@ class ScoreOut(BaseModel):
     maturity_level: str
     gate: str
     dimensions: list[ScoreDimension]
+
+
+class TraceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    agent_name: str
+    input_summary: str | None
+    output_summary: str | None
+    tokens_used: int
+    cost: float
+    latency_ms: int
+
+
+class UsageOut(BaseModel):
+    total_analyses: int
+    total_tokens: int
+    total_cost_usd: float
+    avg_cost_per_analysis_usd: float
+    avg_latency_ms: float
+    by_agent: list[dict]
 
 
 class ReportIn(BaseModel):

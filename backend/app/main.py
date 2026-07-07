@@ -6,7 +6,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.routers import analysis, auth, projects, reports
+from app.agents import rag
+from app.api.routers import admin, analysis, auth, projects, reports, standards
 from app.core.config import settings
 from app.db.seed import seed_demo
 from app.db.session import Base, SessionLocal, engine
@@ -17,8 +18,9 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    if settings.seed_demo:
-        with SessionLocal() as db:
+    with SessionLocal() as db:
+        rag.seed_chunks(db)  # base normativa vetorizada (RAG)
+        if settings.seed_demo:
             seed_demo(db)
     yield
 
@@ -36,5 +38,6 @@ def health() -> dict:
     return {"status": "ok", "engine": settings.analysis_engine}
 
 
-for r in (auth.router, projects.router, analysis.router, reports.router):
+for r in (auth.router, projects.router, analysis.router, reports.router,
+          standards.router, admin.router):
     app.include_router(r, prefix=settings.api_v1_prefix)

@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
+import mimetypes
+
+from app.agents import ingestion, rag
 from app.agents.runner import run_analysis
 from app.models import (
     AgentTrace,
@@ -14,6 +17,7 @@ from app.models import (
     Product,
     Recommendation,
 )
+from app.services import storage
 
 
 def _product_to_dict(product: Product) -> dict:
@@ -32,10 +36,37 @@ def _product_to_dict(product: Product) -> dict:
     }
 
 
+def _enrich_from_images(db: Session, product: Product, pdict: dict) -> None:
+    """Ingestão multimodal: enriquece o produto com atributos detectados na imagem."""
+    if not product.images or not ingestion.available():
+        return
+    try:
+        img = product.images[0]
+        data = storage.read(img.file_url)
+        mime = mimetypes.guess_type(img.file_url)[0] or "image/png"
+        text = f"{product.name}. {product.description or ''}"
+        res = ingestion.ingest(data, mime, text)
+    except Exception:
+        return
+    if not res:
+        return
+    if res.category and not pdict.get("category"):
+        pdict["category"] = res.category
+    if res.cap_type and not pdict.get("cap_type"):
+        pdict["cap_type"] = res.cap_type
+    existing = {c["component_type"] for c in pdict["components"]}
+    for comp in res.detected_components:
+        if comp not in existing:
+            pdict["components"].append({"component_type": comp, "material": None,
+                                        "dimensions": None, "description": "detectado por IA"})
+
+
 def execute_analysis(db: Session, run: AnalysisRun, product: Product) -> AnalysisRun:
     """Executa a malha de agentes e grava checklist, recomendações e traces."""
     profiles = json.loads(run.profiles) if run.profiles else []
-    result = run_analysis(_product_to_dict(product), profiles)
+    pdict = _product_to_dict(product)
+    _enrich_from_images(db, product, pdict)
+    result = run_analysis(pdict, profiles)
 
     for f in result.checklist:
         db.add(ChecklistItem(
@@ -43,12 +74,21 @@ def execute_analysis(db: Session, run: AnalysisRun, product: Product) -> Analysi
             status=f.status, evidence=f.evidence, priority=f.priority,
         ))
     for r in result.recommendations:
+        # RAG normativo: recupera o trecho de norma mais relevante para a barreira.
+        hits = rag.search(db, r.barrier, jurisdiction=None, k=1)
+        norm_evidence = None
+        std_ref, std_status = r.standard_ref, r.standard_status
+        if hits:
+            top = hits[0]
+            norm_evidence = f"{top['title']}: {top['chunk']}"
+            if not std_ref:
+                std_ref, std_status = top["title"], top["status"]
         db.add(Recommendation(
             analysis_run_id=run.id, component=r.component, barrier=r.barrier,
             impact=r.impact, option_min=r.option_min, option_mid=r.option_mid,
             option_premium=r.option_premium, effort=r.effort, priority=r.priority,
-            evidence_level=r.evidence_level, standard_ref=r.standard_ref,
-            standard_status=r.standard_status,
+            evidence_level=r.evidence_level, standard_ref=std_ref,
+            standard_status=std_status, norm_evidence=norm_evidence,
         ))
     for t in result.traces:
         db.add(AgentTrace(

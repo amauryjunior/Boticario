@@ -40,8 +40,8 @@ def _build_report_content(db: Session, run: AnalysisRun) -> dict:
             {"componente": r.component, "barreira": r.barrier, "impacto": r.impact,
              "minimo": r.option_min, "intermediario": r.option_mid,
              "premium": r.option_premium, "norma": r.standard_ref,
-             "status_norma": r.standard_status, "prioridade": r.priority,
-             "nivel_evidencia": r.evidence_level} for r in recs
+             "status_norma": r.standard_status, "evidencia_normativa": r.norm_evidence,
+             "prioridade": r.priority, "nivel_evidencia": r.evidence_level} for r in recs
         ],
         "aviso": ("Recomendações geradas por IA/heurística. Não constituem "
                   "conformidade legal definitiva; itens 'a_validar' exigem "

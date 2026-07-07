@@ -9,6 +9,7 @@ from app.models.entities import (  # noqa: F401
     Project,
     Recommendation,
     Report,
+    StandardChunk,
     StandardReference,
     User,
 )

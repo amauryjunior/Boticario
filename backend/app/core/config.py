@@ -26,6 +26,16 @@ class Settings(BaseSettings):
     model_fast: str = "gemini-2.5-flash"
     model_pro: str = "gemini-2.5-pro"
 
+    # Armazenamento de imagens/relatórios: local (default) ou GCS.
+    uploads_dir: str = "./uploads"
+    gcs_bucket: str = ""
+
+    # Execução da análise: "sync" (default) ou "async" (fila).
+    analysis_mode: str = "sync"
+    # Fila: "local" (thread em processo) ou "pubsub" (GCP).
+    queue_backend: str = "local"
+    pubsub_topic: str = "analysis-requested"
+
     seed_demo: bool = True
     demo_email: str = "demo@incluabeauty.ai"
     demo_password: str = "demo1234"

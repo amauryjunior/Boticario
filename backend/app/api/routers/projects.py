@@ -1,13 +1,14 @@
 """Projetos e produtos (RF-004 a RF-008)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
-from app.models import Product, ProductComponent, Project, User
-from app.schemas.api import ProductIn, ProductOut, ProjectIn, ProjectOut
+from app.models import Product, ProductComponent, ProductImage, Project, User
+from app.schemas.api import ImageOut, ProductIn, ProductOut, ProjectIn, ProjectOut
+from app.services import storage
 
 router = APIRouter(tags=["projects"])
 
@@ -67,3 +68,30 @@ def get_product(
     if not product:
         raise HTTPException(404, "Produto não encontrado")
     return product
+
+
+@router.post("/products/{product_id}/images", response_model=ImageOut, status_code=201)
+async def upload_image(
+    product_id: str,
+    image_type: str | None = None,
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ProductImage:
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Produto não encontrado")
+    data = await file.read()
+    url = storage.save(data, file.filename or "image.png", file.content_type)
+    img = ProductImage(product_id=product.id, file_url=url, image_type=image_type)
+    db.add(img)
+    db.commit()
+    db.refresh(img)
+    return img
+
+
+@router.get("/products/{product_id}/images", response_model=list[ImageOut])
+def list_images(
+    product_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> list[ProductImage]:
+    return db.query(ProductImage).filter(ProductImage.product_id == product_id).all()

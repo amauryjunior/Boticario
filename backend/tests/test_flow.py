@@ -10,22 +10,28 @@ os.environ["ANALYSIS_ENGINE"] = "heuristic"
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.db.session import Base, engine  # noqa: E402
+from app.agents import rag  # noqa: E402
+from app.db.session import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
+with SessionLocal() as _db:
+    rag.seed_chunks(_db)  # base normativa vetorizada p/ RAG nos testes
 client = TestClient(app)
 API = "/api/v1"
 
 
-def _auth() -> dict:
+def _auth_as(email: str) -> dict:
     r = client.post(f"{API}/auth/signup", json={
         "organization_name": "Test Beauty", "name": "Tester",
-        "email": "tester@example.com", "password": "secret123",
+        "email": email, "password": "secret123",
     })
     assert r.status_code == 201, r.text
-    token = r.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+def _auth() -> dict:
+    return _auth_as("tester@example.com")
 
 
 def test_end_to_end_analysis():
@@ -74,6 +80,65 @@ def test_end_to_end_analysis():
     dl = client.get(f"{API}/reports/{rep['id']}/download", headers=headers)
     assert dl.status_code == 200
     assert "recomendacoes" in dl.text
+
+
+def test_rag_traces_and_usage():
+    headers = _auth_as("rag@example.com")
+    proj = client.post(f"{API}/projects", headers=headers, json={"name": "P"}).json()
+    prod = client.post(f"{API}/products", headers=headers, json={
+        "project_id": proj["id"], "name": "Batom", "category": "maquiagem",
+        "cap_type": "rosca", "components": [{"component_type": "tampa"},
+                                            {"component_type": "rotulo"}],
+    }).json()
+    run = client.post(f"{API}/analysis-runs", headers=headers, json={
+        "product_id": prod["id"], "profiles": ["baixa_visao", "artrite"],
+    }).json()
+
+    # RAG: recomendações trazem evidência normativa recuperada
+    recs = client.get(f"{API}/analysis-runs/{run['id']}/recommendations", headers=headers).json()
+    assert any(r["norm_evidence"] for r in recs)
+
+    # busca semântica na base normativa
+    search = client.get(f"{API}/standards/search", headers=headers,
+                        params={"q": "tampa difícil de abrir força"}).json()
+    assert len(search["matches"]) > 0
+
+    # traces por agente
+    trace = client.get(f"{API}/analysis-runs/{run['id']}/trace", headers=headers).json()
+    assert len(trace) >= 1
+
+    # dashboard de uso/custo
+    usage = client.get(f"{API}/admin/usage", headers=headers).json()
+    assert usage["total_analyses"] >= 1
+    assert "by_agent" in usage
+
+
+def test_async_mode():
+    import time
+
+    from app.core.config import settings
+    settings.analysis_mode = "async"
+    try:
+        headers = _auth_as("async@example.com")
+        proj = client.post(f"{API}/projects", headers=headers, json={"name": "P"}).json()
+        prod = client.post(f"{API}/products", headers=headers, json={
+            "project_id": proj["id"], "name": "Sérum", "category": "skincare",
+            "cap_type": "rosca", "components": [{"component_type": "tampa"}],
+        }).json()
+        run = client.post(f"{API}/analysis-runs", headers=headers, json={
+            "product_id": prod["id"], "profiles": ["artrite"],
+        }).json()
+        assert run["status"] in {"queued", "running", "done"}
+
+        # aguarda o worker (thread local) concluir
+        for _ in range(50):
+            r = client.get(f"{API}/analysis-runs/{run['id']}", headers=headers).json()
+            if r["status"] == "done":
+                break
+            time.sleep(0.1)
+        assert r["status"] == "done"
+    finally:
+        settings.analysis_mode = "sync"
 
 
 def test_scoring_levels():

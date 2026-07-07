@@ -141,6 +141,7 @@ class Recommendation(Base):
     evidence_level: Mapped[str | None] = mapped_column(String(40), nullable=True)
     standard_ref: Mapped[str | None] = mapped_column(String(200), nullable=True)
     standard_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    norm_evidence: Mapped[str | None] = mapped_column(Text, nullable=True)  # trecho RAG
 
     run: Mapped["AnalysisRun"] = relationship(back_populates="recommendations")
 
@@ -168,6 +169,22 @@ class StandardReference(Base):
     jurisdiction: Mapped[str | None] = mapped_column(String(60), nullable=True)
     status: Mapped[str] = mapped_column(String(40), default="referencia_design")
     applicability_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class StandardChunk(Base):
+    """Trecho normativo vetorizado para RAG (RF-015/016).
+
+    Em produção com Cloud SQL, `embedding` migra para coluna pgvector; aqui é
+    armazenado como JSON (texto) para portabilidade SQLite/Postgres no MVP.
+    """
+    __tablename__ = "standard_chunks"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    title: Mapped[str] = mapped_column(String(200))
+    source: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    jurisdiction: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="referencia_design")
+    chunk: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list[float]
 
 
 class Report(Base):

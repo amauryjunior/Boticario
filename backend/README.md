@@ -107,9 +107,21 @@ backend/app/
 | GET  | `/api/v1/me` | usuário atual |
 | POST/GET | `/api/v1/projects` | projetos |
 | POST | `/api/v1/products` · GET `/products/{id}` | produtos + componentes |
-| POST | `/api/v1/analysis-runs` | executa a análise (agentes) |
-| GET | `/api/v1/analysis-runs/{id}/score` · `/checklist` · `/recommendations` | resultados |
+| POST/GET | `/api/v1/products/{id}/images` | upload/listagem de imagens (ingestão multimodal) |
+| POST | `/api/v1/analysis-runs` | executa a análise (sync ou async) |
+| GET | `/api/v1/analysis-runs/{id}/score` · `/checklist` · `/recommendations` · `/trace` | resultados e traces |
+| GET | `/api/v1/standards` · `/standards/search?q=` | base normativa + busca vetorial (RAG) |
+| GET | `/api/v1/admin/usage` | dashboard de uso e custo de IA (RNF-012) |
 | POST | `/api/v1/reports` · GET `/reports/{id}/download` | relatório |
+
+### Modos de execução (variáveis de ambiente)
+
+- `ANALYSIS_MODE=sync|async` — síncrono (default) ou fila.
+- `QUEUE_BACKEND=local|pubsub` — thread local (default) ou Google Pub/Sub.
+- `UPLOADS_DIR` / `GCS_BUCKET` — armazenamento local ou Google Cloud Storage.
+
+Em produção (GCP), o endpoint interno `POST /api/v1/internal/pubsub/analysis`
+recebe o push do Pub/Sub e processa a análise no serviço de agentes.
 
 ## Notas de produção
 
