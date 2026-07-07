@@ -1,0 +1,143 @@
+:root {
+  --bg: #fbf7f4;
+  --surface: #ffffff;
+  --text: #1a1523;
+  --muted: #514b5c;
+  --border: #d9d2cc;
+  --primary: #6b3fa0;      /* lilás profundo — contraste AA sobre branco */
+  --primary-text: #ffffff;
+  --focus: #1b5e9e;
+  --ok: #1c6b3c;
+  --warn: #8a5a00;
+  --bad: #a11a2b;
+  --info: #1b5e9e;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17131c;
+    --surface: #221b2a;
+    --text: #f4eef7;
+    --muted: #c3b9cc;
+    --border: #40384a;
+    --primary: #c7a9ec;
+    --primary-text: #1a1523;
+    --focus: #7cc0ff;
+    --ok: #7ce0a3;
+    --warn: #f0c66b;
+    --bad: #ff9aa6;
+    --info: #7cc0ff;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+a { color: var(--focus); }
+
+/* foco sempre visível (WCAG 2.4.7 / 2.4.11) */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--primary);
+  color: var(--primary-text);
+  padding: 0.6rem 1rem;
+  z-index: 100;
+}
+.skip-link:focus { left: 0.5rem; top: 0.5rem; }
+
+header.app {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.2rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+header.app h1 { font-size: 1.15rem; margin: 0; }
+header.app .brand { display: flex; align-items: center; gap: 0.5rem; }
+
+main { max-width: 1000px; margin: 0 auto; padding: 1.2rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1.2rem;
+}
+.card h2 { margin-top: 0; font-size: 1.15rem; }
+.card h3 { font-size: 1rem; }
+
+label { display: block; font-weight: 600; margin: 0.7rem 0 0.25rem; }
+input, select, textarea {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+fieldset { border: 1px solid var(--border); border-radius: 8px; margin: 0.7rem 0; }
+legend { font-weight: 600; padding: 0 0.4rem; }
+
+.checkbox-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.35rem 1rem; }
+.checkbox-grid label { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; margin: 0.2rem 0; }
+.checkbox-grid input { width: auto; }
+
+button {
+  font-size: 1rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--primary-text);
+  cursor: pointer;
+  font-weight: 600;
+}
+button.secondary { background: transparent; color: var(--text); border-color: var(--border); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.row { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: flex-end; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid;
+}
+.badge.ok { color: var(--ok); border-color: var(--ok); }
+.badge.warn { color: var(--warn); border-color: var(--warn); }
+.badge.bad { color: var(--bad); border-color: var(--bad); }
+.badge.info { color: var(--info); border-color: var(--info); }
+
+.score-num { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+.meter { background: var(--border); border-radius: 999px; height: 14px; overflow: hidden; }
+.meter > span { display: block; height: 100%; background: var(--primary); }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+
+.muted { color: var(--muted); }
+.error { color: var(--bad); font-weight: 600; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+ul.rec-options { margin: 0.3rem 0 0; padding-left: 1.1rem; }
+ul.rec-options li { margin-bottom: 0.2rem; }

@@ -1,0 +1,11 @@
+project_id      = "inclua-beauty-prod"
+region          = "southamerica-east1"
+vertex_location = "us-central1"
+
+# Sensíveis — prefira -var ou TF_VAR_* em vez de commitar valores reais.
+db_password = "TROQUE-ME"
+jwt_secret  = "TROQUE-ME-32+chars"
+
+# Após o primeiro build das imagens, aponte para o Artifact Registry:
+# api_image    = "southamerica-east1-docker.pkg.dev/inclua-beauty-prod/ib-images/api:latest"
+# agents_image = "southamerica-east1-docker.pkg.dev/inclua-beauty-prod/ib-images/agents:latest"
