@@ -33,6 +33,13 @@ class MeOut(BaseModel):
     organization_id: str
 
 
+class UserCreateIn(BaseModel):
+    name: str
+    email: EmailStr
+    password: str = Field(min_length=6)
+    role: str
+
+
 # ---------- Projeto / Produto ----------
 class ProjectIn(BaseModel):
     name: str

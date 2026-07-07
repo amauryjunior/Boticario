@@ -3,7 +3,6 @@ imagem + texto usando Gemini (Vertex AI). Offline retorna None (sem enriquecer).
 """
 from __future__ import annotations
 
-import json
 import logging
 
 from pydantic import BaseModel

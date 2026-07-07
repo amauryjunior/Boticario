@@ -1,0 +1,92 @@
+# Cloud Build — testes, build e deploy da Inclua Beauty AI.
+# Substituições: _REGION, _AR (Artifact Registry). Ex.:
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_REGION=southamerica-east1
+steps:
+  # 1. Lint + testes do backend (gate de qualidade)
+  - id: backend-tests
+    name: python:3.12-slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        cd backend
+        pip install -q -e ".[dev]"
+        ruff check .
+        pytest -q
+
+  # 2. Build da imagem da API
+  - id: build-api
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_AR}/api:$SHORT_SHA", "-t", "${_AR}/api:latest", "backend"]
+    waitFor: ["backend-tests"]
+
+  # 3. Build da imagem dos agentes (mesma imagem, entrypoint idêntico)
+  - id: build-agents
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_AR}/agents:$SHORT_SHA", "-t", "${_AR}/agents:latest", "backend"]
+    waitFor: ["backend-tests"]
+
+  # 4. Push das imagens
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker push ${_AR}/api:$SHORT_SHA
+        docker push ${_AR}/api:latest
+        docker push ${_AR}/agents:$SHORT_SHA
+        docker push ${_AR}/agents:latest
+    waitFor: ["build-api", "build-agents"]
+
+  # 5. Deploy Cloud Run (API)
+  - id: deploy-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ib-api
+      - --image=${_AR}/api:$SHORT_SHA
+      - --region=${_REGION}
+      - --quiet
+    waitFor: ["push"]
+
+  # 6. Deploy Cloud Run (agentes)
+  - id: deploy-agents
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ib-agents
+      - --image=${_AR}/agents:$SHORT_SHA
+      - --region=${_REGION}
+      - --quiet
+    waitFor: ["push"]
+
+  # 7. Build do frontend (opcional: publicar em bucket/CDN)
+  - id: frontend-build
+    name: node:22-slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        cd frontend
+        npm ci
+        npm run build
+    waitFor: ["-"]
+
+substitutions:
+  _REGION: "southamerica-east1"
+  _AR: "southamerica-east1-docker.pkg.dev/${PROJECT_ID}/ib-images"
+
+images:
+  - "${_AR}/api:$SHORT_SHA"
+  - "${_AR}/agents:$SHORT_SHA"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+timeout: 1800s

@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.agents.schemas import ChecklistFinding
 from app.agents.scoring import approval_gate, compute_scores, maturity_level
-from app.api.deps import get_current_user
+from app.api.deps import require_perm
 from app.core.config import settings
+from app.core.roles import P_ANALYSIS_READ, P_ANALYSIS_RUN
 from app.db.session import get_db
 from app.models import AgentTrace, AnalysisRun, ChecklistItem, Product, Recommendation, User
 from app.schemas.api import (
@@ -29,7 +30,8 @@ router = APIRouter(tags=["analysis"])
 
 @router.post("/analysis-runs", response_model=AnalysisRunOut, status_code=201)
 def create_analysis_run(
-    body: AnalysisRunIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    body: AnalysisRunIn, user: User = Depends(require_perm(P_ANALYSIS_RUN)),
+    db: Session = Depends(get_db),
 ) -> AnalysisRun:
     product = db.get(Product, body.product_id)
     if not product:
@@ -52,7 +54,7 @@ def create_analysis_run(
 
 
 @router.get("/analysis-runs/{run_id}", response_model=AnalysisRunOut)
-def get_run(run_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_run(run_id: str, user: User = Depends(require_perm(P_ANALYSIS_READ)), db: Session = Depends(get_db)):
     run = db.get(AnalysisRun, run_id)
     if not run:
         raise HTTPException(404, "Análise não encontrada")
@@ -60,23 +62,23 @@ def get_run(run_id: str, user: User = Depends(get_current_user), db: Session = D
 
 
 @router.get("/analysis-runs/{run_id}/trace", response_model=list[TraceOut])
-def get_trace(run_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_trace(run_id: str, user: User = Depends(require_perm(P_ANALYSIS_READ)), db: Session = Depends(get_db)):
     """Traces por agente (RNF-004/005): tokens, custo e latência."""
     return db.query(AgentTrace).filter(AgentTrace.analysis_run_id == run_id).all()
 
 
 @router.get("/analysis-runs/{run_id}/checklist", response_model=list[ChecklistItemOut])
-def get_checklist(run_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_checklist(run_id: str, user: User = Depends(require_perm(P_ANALYSIS_READ)), db: Session = Depends(get_db)):
     return db.query(ChecklistItem).filter(ChecklistItem.analysis_run_id == run_id).all()
 
 
 @router.get("/analysis-runs/{run_id}/recommendations", response_model=list[RecommendationOut])
-def get_recommendations(run_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_recommendations(run_id: str, user: User = Depends(require_perm(P_ANALYSIS_READ)), db: Session = Depends(get_db)):
     return db.query(Recommendation).filter(Recommendation.analysis_run_id == run_id).all()
 
 
 @router.get("/analysis-runs/{run_id}/score", response_model=ScoreOut)
-def get_score(run_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_score(run_id: str, user: User = Depends(require_perm(P_ANALYSIS_READ)), db: Session = Depends(get_db)):
     run = db.get(AnalysisRun, run_id)
     if not run:
         raise HTTPException(404, "Análise não encontrada")

@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.agents.schemas import ChecklistFinding
 from app.agents.scoring import approval_gate, compute_scores, maturity_level
-from app.api.deps import get_current_user
+from app.api.deps import require_perm
+from app.core.roles import P_ANALYSIS_READ, P_REPORT_WRITE
 from app.db.session import get_db
 from app.models import AnalysisRun, ChecklistItem, Product, Recommendation, Report, User
 from app.schemas.api import ReportIn, ReportOut
@@ -51,7 +52,8 @@ def _build_report_content(db: Session, run: AnalysisRun) -> dict:
 
 @router.post("/reports", response_model=ReportOut, status_code=201)
 def create_report(
-    body: ReportIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    body: ReportIn, user: User = Depends(require_perm(P_REPORT_WRITE)),
+    db: Session = Depends(get_db),
 ) -> Report:
     run = db.get(AnalysisRun, body.analysis_run_id)
     if not run:
@@ -69,7 +71,8 @@ def create_report(
 
 @router.get("/reports/{report_id}/download")
 def download_report(
-    report_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    report_id: str, user: User = Depends(require_perm(P_ANALYSIS_READ)),
+    db: Session = Depends(get_db),
 ):
     report = db.get(Report, report_id)
     if not report:

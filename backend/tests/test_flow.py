@@ -141,6 +141,32 @@ def test_async_mode():
         settings.analysis_mode = "sync"
 
 
+def test_rbac_enforced():
+    admin = _auth_as("admin_rbac@example.com")  # signup => administrador
+    # admin cria um testador_pcd (papel só de leitura)
+    r = client.post(f"{API}/users", headers=admin, json={
+        "name": "Tester PcD", "email": "pcd@example.com",
+        "password": "secret123", "role": "testador_pcd",
+    })
+    assert r.status_code == 201, r.text
+
+    tester = client.post(f"{API}/auth/login", json={
+        "email": "pcd@example.com", "password": "secret123",
+    }).json()
+    th = {"Authorization": f"Bearer {tester['access_token']}"}
+
+    # testador_pcd NÃO pode criar projeto (403)
+    forbidden = client.post(f"{API}/projects", headers=th, json={"name": "X"})
+    assert forbidden.status_code == 403
+
+    # testador_pcd NÃO pode ver /admin/usage (403)
+    assert client.get(f"{API}/admin/usage", headers=th).status_code == 403
+
+    # mas PODE buscar normas (leitura permitida)
+    assert client.get(f"{API}/standards/search", headers=th,
+                      params={"q": "contraste"}).status_code == 200
+
+
 def test_scoring_levels():
     from app.agents.scoring import maturity_level
     assert maturity_level(95) == "Referência inclusiva"

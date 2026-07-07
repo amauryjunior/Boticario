@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import require_perm
+from app.core.roles import P_ADMIN
 from app.db.session import get_db
 from app.models import (
     AgentTrace,
@@ -20,7 +21,7 @@ router = APIRouter(tags=["admin"])
 
 
 @router.get("/admin/usage", response_model=UsageOut)
-def usage(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> UsageOut:
+def usage(user: User = Depends(require_perm(P_ADMIN)), db: Session = Depends(get_db)) -> UsageOut:
     """Agrega tokens, custo e latência das análises da organização do usuário."""
     # runs da organização (via project -> product -> run)
     run_ids = [
